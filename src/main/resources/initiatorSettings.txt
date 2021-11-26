@@ -1,0 +1,23 @@
+ [DEFAULT]
+ ConnectionType=initiator
+ LogonTimeout=30
+ ReconnectInterval=5
+ ResetOnLogon=Y
+ FileLogPath=./Client_Logs
+ SenderCompID=CLIENT
+ ValidateIncomingMessage=N
+
+ [SESSION]
+ BeginString=FIX.4.2
+ TargetCompID=EXECUTOR
+ StartDay=monday
+ EndDay=sunday
+ StartTime=00:00:00
+ EndTime=00:00:00
+ HeartBtInt=5
+ CheckLatency=N
+ SocketConnectPort=9090
+ SocketConnectHost=localhost
+ UseDataDictionary=Y
+ DataDictionary=./FIX42.xml
+ FileStorePath=./Client_Seq_Store

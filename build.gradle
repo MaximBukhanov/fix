@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation group: 'junit', name: 'junit', version: '4.13.2'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.8.1'
+
+    implementation group: 'org.apache.mina', name: 'mina-core', version: '2.1.4'
+    implementation group: 'org.quickfixj', name: 'quickfixj-all', version: '2.3.0'
+    implementation group: 'org.quickfixj', name: 'quickfixj-core', version: '2.3.0'
+    implementation group: 'org.quickfixj', name: 'quickfixj-messages-fix42', version: '2.3.0'
+
+}
+
+test {
+    useJUnitPlatform()
+}
