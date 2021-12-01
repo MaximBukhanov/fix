@@ -1,25 +1,24 @@
 package Acceptor;
 
+import quickfix.fix42.Heartbeat;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.net.SocketOptions;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class StartAcceptor {
-    private final int TIMEOUT = 20_000;
+    private final int TIMEOUT = 20;
     private HashMap<SocketChannel, ByteBuffer> sessions = new HashMap<>();
     private ServerSocketChannel serverSocketChannel;
     private Selector selector;
     private Attachment attachment = new Attachment();
+    private TradeAppAcceptor factoryMessage = new TradeAppAcceptor();
 
     StartAcceptor(InetSocketAddress address) throws IOException {
         serverSocketChannel = ServerSocketChannel.open();
@@ -32,6 +31,7 @@ public class StartAcceptor {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             try {
                 start();
+                checkHeartbeatTime();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -39,7 +39,7 @@ public class StartAcceptor {
     }
 
     public void start() throws IOException{
-        if (selector.select(TIMEOUT) > 0) {
+        if (selector.select(TIMEOUT * 1000) > 0) {
             Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
             while (keys.hasNext()) {
                 SelectionKey key = keys.next();
@@ -57,7 +57,6 @@ public class StartAcceptor {
             selector.selectedKeys().clear();
         } else {
             System.out.println(">>Timeout");
-            //TODO TestRequest (35=1)??
         }
     }
 
@@ -69,8 +68,10 @@ public class StartAcceptor {
         sessions.remove(socketChannel);
         String message = "";
 
-        if (writeBuffer != null)
+        if (writeBuffer != null) {
             socketChannel.write(writeBuffer);
+            attachment.putHeartbeatTime(socketChannel, System.currentTimeMillis());
+        }
 
         if (writeBufferPrint != null) {
             message = new String(writeBufferPrint.array());
@@ -108,7 +109,7 @@ public class StartAcceptor {
             disconnect(key, socketChannel);
             return;
         }
-        TradeAppAcceptor factoryMessage = new TradeAppAcceptor();
+
         ByteBuffer response = factoryMessage.createExecutionReport(socketChannel, message, attachment);
 
         sessions.put(socketChannel, response);
@@ -132,8 +133,33 @@ public class StartAcceptor {
         sessions.remove(socketChannel);
         attachment.removeInMsgSeqNo(socketChannel);
         attachment.removeOutMsgSeqNo(socketChannel);
+        attachment.removeHeartbeatTime(socketChannel);
+        attachment.removeTarget(socketChannel);
+        attachment.removeHeartBtInt(socketChannel);
         key.cancel();
         socketChannel.close();
+    }
+
+    private void checkHeartbeatTime() throws ClosedChannelException {
+        for (SocketChannel socketChannel : attachment.getAllConnection()) {
+            Long heartbeatTime = attachment.getHeartbeatTime(socketChannel);
+            if ((heartbeatTime != null) && (System.currentTimeMillis() - heartbeatTime > attachment.getHeartBtInt(socketChannel) * 1000)) {
+                Integer outMsgSeqNo = attachment.getOutMsgSeqNo(socketChannel);
+                outMsgSeqNo++;
+
+                Heartbeat heartbeat = new Heartbeat();
+                factoryMessage.setHeader(
+                        attachment.getTarget(socketChannel),
+                        outMsgSeqNo,
+                        heartbeat);
+
+                attachment.putOutMsgSeqNo(socketChannel, outMsgSeqNo);
+                ByteBuffer heartbeatBuffer = ByteBuffer.wrap(heartbeat.toString().getBytes());
+
+                sessions.put(socketChannel, heartbeatBuffer);
+                socketChannel.register(selector, SelectionKey.OP_WRITE);
+            }
+        }
     }
 
     public static void main(String[] args) {

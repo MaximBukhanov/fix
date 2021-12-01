@@ -40,6 +40,7 @@ public class TradeAppAcceptor {
 
             field = messageFix.getHeader().getField(new MsgType());
             String target = messageFix.getHeader().getField(new SenderCompID()).getValue();
+            attachment.putTarget(socketChannel, target);
             int msgSeqNo = messageFix.getHeader().getField(new MsgSeqNum()).getValue();
 
             switch (field.getValue()) {
@@ -48,6 +49,7 @@ public class TradeAppAcceptor {
                     inMsgSeqNo++;
                     outMsgSeqNo++;
                     if (msgSeqNo == 1) {
+                        attachment.putHeartBtInt(socketChannel, messageFix.getField(new HeartBtInt()).getValue());
                         Logon logon = new Logon(
                                 new EncryptMethod(0),
                                 new HeartBtInt(30));
@@ -130,7 +132,7 @@ public class TradeAppAcceptor {
                 }
             }
         } catch (InvalidMessage | ConfigError | FieldNotFound invalidMessage) {
-            invalidMessage.printStackTrace();
+            //invalidMessage.printStackTrace();
             //return response;
         }
         return response;
@@ -167,7 +169,7 @@ public class TradeAppAcceptor {
         return ByteBuffer.wrap(resendRequest.toString().getBytes());
     }
 
-    private void setHeader (String targetCompID, int outMsgSeqNo, Message message) {
+    public void setHeader (String targetCompID, int outMsgSeqNo, Message message) {
         quickfix.fix42.Message.Header header = (quickfix.fix42.Message.Header) message.getHeader();
         header.set(new SenderCompID("EXECUTOR"));
         header.set(new TargetCompID(targetCompID));

@@ -82,7 +82,8 @@ public class StartAcceptorTest {
                 new OrdType(OrdType.MARKET)
         );
 
-        String expected = "8=FIX.4.2\u00019=69\u000135=A\u000134=1\u000149=EXECUTOR\u000156=CLIENT\u000198=0\u0001108=30\u0001";
+        String expected = "8=FIX.4.2\u00019=69\u000135=A\u000134=1\u000149=EXECUTOR" +
+                "\u000156=CLIENT\u000198=0\u0001108=30\u0001";
 
         ArrayList<String> systemMessages = createSystemMessage(newOrderSingle, expected);
         String actualStr = parseString(systemMessages.get(0));

@@ -48,7 +48,8 @@ public class TradeAppAcceptorTest {
     public void whenLogonMsgCorrect () throws IOException {
         String actualFixMsg = "8=FIX.4.2\u00019=68\u000135=A\u000149=CLIENT1\u000156=EXECUTOR\u000134=1" +
                 "\u000152=20211124-14:33:40\u000198=0\u0001108=5000\u000110=241\u0001";
-        String expectedFixMsg = "8=FIX.4.2\u00019=70\u000135=A\u000134=1\u000149=EXECUTOR\u000156=CLIENT1\u000198=0\u0001108=30\u0001";
+        String expectedFixMsg = "8=FIX.4.2\u00019=70\u000135=A\u000134=1\u000149=EXECUTOR" +
+                "\u000156=CLIENT1\u000198=0\u0001108=30\u0001";
 
         createMessageTest(actualFixMsg, expectedFixMsg, 0, 0);
     }
@@ -64,7 +65,8 @@ public class TradeAppAcceptorTest {
 
     @Test
     public void whenLogoutMsgCorrect () throws IOException {
-        String actualFixMsg = "8=FIX.4.2\u00019=54\u000135=5\u000149=CLIENT1\u000156=EXECUTOR\u000134=2\u000152=20211124-15:29:53\u000110=112\u0001";
+        String actualFixMsg = "8=FIX.4.2\u00019=54\u000135=5\u000149=CLIENT1\u000156=EXECUTOR" +
+                "\u000134=2\u000152=20211124-15:29:53\u000110=112\u0001";
         String expectedFixMsg = "8=FIX.4.2\u00019=58\u000135=5\u000134=2\u000149=EXECUTOR\u000156=CLIENT1\u0001";
 
         createMessageTest(actualFixMsg, expectedFixMsg, 1, 1);
@@ -76,7 +78,8 @@ public class TradeAppAcceptorTest {
                 "52=20211125-08:10:02\u000111=150275560\u000121=1\u000155=ERICB.ST\u000154=1\u0001" +
                 "60=20211125-08:10:02\u000140=2\u000144=50\u000138=1000\u000110=231\u0001";
         String expectedFixMsg = "8=FIX.4.2\u00019=123\u000135=8\u000134=2\u000149=EXECUTOR\u000156=CLIENT1\u0001" +
-                "6=0\u000114=0\u000117=789\u000120=0\u000137=123456\u000139=0\u000154=1\u000155=ERICB.ST\u0001150=0\u0001151=0\u0001";
+                "6=0\u000114=0\u000117=789\u000120=0\u000137=123456\u000139=0\u000154=1" +
+                "\u000155=ERICB.ST\u0001150=0\u0001151=0\u0001";
 
         createMessageTest(actualFixMsg, expectedFixMsg, 1, 1);
     }
