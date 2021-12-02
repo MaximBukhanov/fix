@@ -10,6 +10,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class TradeAppAcceptor {
+
+    private final String ACCEPTOR_ID = "EXECUTOR";
+
     /**
      * Создание ответного сообщения
      *
@@ -26,6 +29,7 @@ public class TradeAppAcceptor {
         Integer inMsgSeqNo = attachment.getInMsgSeqNo(socketChannel);
         Integer outMsgSeqNo = attachment.getOutMsgSeqNo(socketChannel);
 
+        /** Проверка длины сообщения <9> и протокола передачи <8> **/
         if(!checkLengthMsg(message) || !checkNameProtocol(message)) {
             inMsgSeqNo++;
             attachment.putInMsgSeqNo(socketChannel, inMsgSeqNo);
@@ -35,7 +39,8 @@ public class TradeAppAcceptor {
         try {
             messageFix = MessageUtils.parse(new DefaultMessageFactory(), new DataDictionary("./FIX42.xml"), message);
 
-            if (!messageFix.getHeader().getField(new TargetCompID()).getValue().equals("EXECUTOR"))
+            /** Проверка SenderCompID **/
+            if (!messageFix.getHeader().getField(new TargetCompID()).getValue().equals(ACCEPTOR_ID))
                 return null;
 
             field = messageFix.getHeader().getField(new MsgType());
@@ -45,7 +50,7 @@ public class TradeAppAcceptor {
 
             switch (field.getValue()) {
                 case "A": {
-                    //Logon
+                    /** Ответ на LogonMessage **/
                     inMsgSeqNo++;
                     outMsgSeqNo++;
                     if (msgSeqNo == 1) {
@@ -64,7 +69,7 @@ public class TradeAppAcceptor {
                     break;
                 }
                 case "D": {
-                    //NewOrderSingle
+                    /** Ответ на NewOrderSingleMessage **/
                     inMsgSeqNo++;
                     outMsgSeqNo++;
                     if (msgSeqNo > 1 && msgSeqNo == inMsgSeqNo) {
@@ -95,7 +100,7 @@ public class TradeAppAcceptor {
                     break;
                 }
                 case "5": {
-                    //Logout
+                    /** Ответ на LogoutMessage **/
                     inMsgSeqNo++;
                     outMsgSeqNo++;
                     if (msgSeqNo > 1 && msgSeqNo == inMsgSeqNo) {
@@ -112,13 +117,13 @@ public class TradeAppAcceptor {
                     break;
                 }
                 case "0": {
-                    //Heartbeat
+                    /** Ответ на HeartbeatMessage **/
                     inMsgSeqNo++;
                     attachment.putInMsgSeqNo(socketChannel, inMsgSeqNo);
                     break;
                 }
                 case "1": {
-                    //send HeartBeat
+                    /** Ответ на TestRequestMessage **/
                     inMsgSeqNo++;
                     outMsgSeqNo++;
                     Heartbeat heartbeat = new Heartbeat();
@@ -132,12 +137,16 @@ public class TradeAppAcceptor {
                 }
             }
         } catch (InvalidMessage | ConfigError | FieldNotFound invalidMessage) {
-            //invalidMessage.printStackTrace();
-            //return response;
+            /** invalidMessage.printStackTrace(); **/
         }
         return response;
     }
 
+    /**
+     * Проверка длины сообщения <9>
+     * @param message
+     * @return
+     */
     private boolean checkLengthMsg (String message) {
         String [] groups = message.split("\u0001");
         String body = message.substring(message.indexOf("35="), message.length() - 7);
@@ -147,6 +156,11 @@ public class TradeAppAcceptor {
         return true;
     }
 
+    /**
+     * Проверка версии протокола <8>
+     * @param message
+     * @return
+     */
     private boolean checkNameProtocol(String message) {
         String [] groups = message.split("\u0001");
         if (!groups [0].equals("8=FIX.4.2"))
@@ -155,6 +169,14 @@ public class TradeAppAcceptor {
         return true;
     }
 
+    /**
+     * Создание ResendRequestMessage
+     * @param msgSeqNo
+     * @param inMsgSeqNo
+     * @param outMsgSeqNo
+     * @param target
+     * @return
+     */
     private ByteBuffer createResendRequest(int msgSeqNo, int inMsgSeqNo, int outMsgSeqNo, String target) {
         ResendRequest resendRequest = new ResendRequest();
         if (msgSeqNo == 0) {
@@ -169,6 +191,12 @@ public class TradeAppAcceptor {
         return ByteBuffer.wrap(resendRequest.toString().getBytes());
     }
 
+    /**
+     * Создание Header для FIX
+     * @param targetCompID
+     * @param outMsgSeqNo
+     * @param message
+     */
     public void setHeader (String targetCompID, int outMsgSeqNo, Message message) {
         quickfix.fix42.Message.Header header = (quickfix.fix42.Message.Header) message.getHeader();
         header.set(new SenderCompID("EXECUTOR"));

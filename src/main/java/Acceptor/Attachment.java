@@ -4,6 +4,9 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Set;
 
+/**
+ * Класс хранит всю информацию о клиентских сессиях
+ */
 public class Attachment {
     private HashMap<SocketChannel, Integer> inMsgSeqNoMap = new HashMap<>();
     private HashMap<SocketChannel, Integer> outMsgSeqNoMap = new HashMap<>();

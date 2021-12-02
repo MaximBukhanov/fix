@@ -1,6 +1,9 @@
 package Acceptor;
 
 import org.junit.Test;
+import quickfix.field.EncryptMethod;
+import quickfix.field.HeartBtInt;
+import quickfix.fix42.Logon;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,20 +31,23 @@ public class TradeAppAcceptorTest {
 
         actualByteBuffer = tradeAppAcceptor.createExecutionReport(socketChannel, actualFixMsg, attachment);
 
-        if (actualByteBuffer != null) {
+        if (actualByteBuffer != null)
+           actual =  deleteTimestamp(actualByteBuffer);
 
-            String actualWithoutTimeAndTrailer = new String(actualByteBuffer.array());
-
-            String timeSending = actualWithoutTimeAndTrailer.substring(
-                    actualWithoutTimeAndTrailer.indexOf("52="),
-                    actualWithoutTimeAndTrailer.indexOf("\u0001", actualWithoutTimeAndTrailer.indexOf("52=")) + 1);
-
-            actualWithoutTimeAndTrailer = actualWithoutTimeAndTrailer.replace(timeSending, "");
-            actualWithoutTimeAndTrailer = actualWithoutTimeAndTrailer.substring(0, actualWithoutTimeAndTrailer.indexOf("10="));
-
-            actual = actualWithoutTimeAndTrailer.getBytes(StandardCharsets.UTF_8);
-        }
         assertArrayEquals(actual, expected);
+    }
+
+    private byte[] deleteTimestamp (ByteBuffer actualByteBuffer) {
+
+        String actualWithoutTimeAndTrailer = new String(actualByteBuffer.array());
+        String timeSending = actualWithoutTimeAndTrailer.substring(
+                actualWithoutTimeAndTrailer.indexOf("52="),
+                actualWithoutTimeAndTrailer.indexOf("\u0001", actualWithoutTimeAndTrailer.indexOf("52=")) + 1);
+
+        actualWithoutTimeAndTrailer = actualWithoutTimeAndTrailer.replace(timeSending, "");
+        actualWithoutTimeAndTrailer = actualWithoutTimeAndTrailer.substring(0, actualWithoutTimeAndTrailer.indexOf("10="));
+
+        return actualWithoutTimeAndTrailer.getBytes(StandardCharsets.UTF_8);
     }
 
     @Test

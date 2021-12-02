@@ -20,6 +20,11 @@ public class StartAcceptor {
     private Attachment attachment = new Attachment();
     private TradeAppAcceptor factoryMessage = new TradeAppAcceptor();
 
+    /**
+     * Запускает сервер
+     * @param address
+     * @throws IOException
+     */
     StartAcceptor(InetSocketAddress address) throws IOException {
         serverSocketChannel = ServerSocketChannel.open();
         serverSocketChannel.configureBlocking(false);
@@ -28,6 +33,7 @@ public class StartAcceptor {
         selector = Selector.open();
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
+        /** Основной цикл **/
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             try {
                 start();
@@ -38,6 +44,10 @@ public class StartAcceptor {
         }, 0,5, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * Слушает клиентские соединения
+     * @throws IOException
+     */
     public void start() throws IOException{
         if (selector.select(TIMEOUT * 1000) > 0) {
             Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
@@ -60,6 +70,11 @@ public class StartAcceptor {
         }
     }
 
+    /**
+     * Отправляет ответ клиенту
+     * @param key
+     * @throws IOException
+     */
     private void write(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
         socketChannel.configureBlocking(false);
@@ -85,6 +100,11 @@ public class StartAcceptor {
         socketChannel.register(selector, SelectionKey.OP_READ);
     }
 
+    /**
+     * Читает присылаемые данные
+     * @param key
+     * @throws IOException
+     */
     private void read(SelectionKey key) throws IOException{
         SocketChannel socketChannel = (SocketChannel) key.channel();
         socketChannel.configureBlocking(false);
@@ -116,6 +136,11 @@ public class StartAcceptor {
         socketChannel.register(selector, SelectionKey.OP_WRITE);
     }
 
+    /**
+     * Принимает новое подключение
+     * @param key
+     * @throws IOException
+     */
     private void accept(SelectionKey key) throws IOException {
         ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
         SocketChannel socketChannel = serverSocketChannel.accept();
@@ -128,6 +153,12 @@ public class StartAcceptor {
         System.out.println("\n>>New Connection: " + socketChannel.getRemoteAddress());
     }
 
+    /**
+     * Завершает подключение
+     * @param key
+     * @param socketChannel
+     * @throws IOException
+     */
     private void disconnect(SelectionKey key, SocketChannel socketChannel) throws IOException {
         System.out.println("!!>Disconnect..." + socketChannel.getRemoteAddress());
         sessions.remove(socketChannel);
@@ -140,9 +171,14 @@ public class StartAcceptor {
         socketChannel.close();
     }
 
+    /**
+     * Проверка наступления Heartbeat интервала
+     * @throws ClosedChannelException
+     */
     private void checkHeartbeatTime() throws ClosedChannelException {
         for (SocketChannel socketChannel : attachment.getAllConnection()) {
             Long heartbeatTime = attachment.getHeartbeatTime(socketChannel);
+
             if ((heartbeatTime != null) && (System.currentTimeMillis() - heartbeatTime > attachment.getHeartBtInt(socketChannel) * 1000)) {
                 Integer outMsgSeqNo = attachment.getOutMsgSeqNo(socketChannel);
                 outMsgSeqNo++;
