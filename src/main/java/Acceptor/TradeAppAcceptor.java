@@ -1,5 +1,6 @@
 package Acceptor;
 
+import com.rabbitmq.client.*;
 import quickfix.*;
 import quickfix.field.*;
 import quickfix.fix42.*;
@@ -8,10 +9,15 @@ import quickfix.fix42.Message;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TradeAppAcceptor {
 
     private final String ACCEPTOR_ID = "EXECUTOR";
+    private String QUEUE_SERVER_TO_WORKER = "server";
+    private String QUEUE_WORKER_TO_SERVER = "worker";
 
     /**
      * Создание ответного сообщения
@@ -24,6 +30,7 @@ public class TradeAppAcceptor {
     public ByteBuffer createExecutionReport(SocketChannel socketChannel, String message, Attachment attachment) throws IOException {
         StringField field = null;
         ByteBuffer response = null;
+        AtomicReference<byte []> responseAtomic = null;
         quickfix.Message messageFix = null;
 
         Integer inMsgSeqNo = attachment.getInMsgSeqNo(socketChannel);
@@ -73,22 +80,37 @@ public class TradeAppAcceptor {
                     inMsgSeqNo++;
                     outMsgSeqNo++;
                     if (msgSeqNo > 1 && msgSeqNo == inMsgSeqNo) {
-                        NewOrderSingle order = (NewOrderSingle) messageFix;
-                        ExecutionReport executionReport = new ExecutionReport(
-                                new OrderID("123456"),
-                                new ExecID("789"),
-                                new ExecTransType(ExecTransType.NEW),
-                                new ExecType(ExecType.NEW),
-                                new OrdStatus(OrdStatus.NEW),
-                                order.getSymbol(),
-                                order.getSide(),
-                                new LeavesQty(0),
-                                new CumQty(0),
-                                new AvgPx(0));
 
-                        setHeader(target, outMsgSeqNo, executionReport);
+                        /** Создание подключения к серверу RabbitMq **/
+                        ConnectionFactory factory = new ConnectionFactory();
+                        factory.setHost("localhost");
+                        try (Connection connection = factory.newConnection();
+                             Channel channel = connection.createChannel();
+                             Channel channelAnswer = connection.createChannel()) {
 
-                        response = ByteBuffer.wrap(executionReport.toString().getBytes());
+                            channel.queueDeclare(QUEUE_SERVER_TO_WORKER, false, false, false, null);
+                            channel.basicPublish("", QUEUE_SERVER_TO_WORKER, null, message.getBytes(StandardCharsets.UTF_8));
+
+                            channelAnswer.queueDeclare(QUEUE_WORKER_TO_SERVER, false, false, false, null);
+
+                            String responseStr = new String (channel.basicGet(QUEUE_WORKER_TO_SERVER, true).getBody(), "UTF-8");
+                            Message fixAnswer = null;
+
+                            try {
+                                fixAnswer = (Message) MessageUtils.parse(new DefaultMessageFactory(), new DataDictionary("./FIX42.xml"), responseStr);
+                            } catch (InvalidMessage | ConfigError invalidMessage) {
+                                invalidMessage.printStackTrace();
+                            }
+
+                            setHeader(target, attachment.getOutMsgSeqNo(socketChannel), fixAnswer);
+                            responseStr = fixAnswer.toString();
+
+                            System.out.println(">>RabbitMQ write message: " + responseStr);
+                            response = ByteBuffer.wrap(responseStr.getBytes());
+
+                        } catch (TimeoutException | IOException e) {
+                            e.printStackTrace();
+                        }
                     } else if (msgSeqNo > 1 && msgSeqNo != inMsgSeqNo) {
                         //ResendRequest send
                         response = createResendRequest(msgSeqNo, inMsgSeqNo, outMsgSeqNo, target);

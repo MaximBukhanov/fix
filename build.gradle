@@ -17,7 +17,9 @@ dependencies {
     implementation group: 'org.quickfixj', name: 'quickfixj-all', version: '2.3.0'
     implementation group: 'org.quickfixj', name: 'quickfixj-core', version: '2.3.0'
     implementation group: 'org.quickfixj', name: 'quickfixj-messages-fix42', version: '2.3.0'
-
+    implementation group: 'com.rabbitmq', name: 'amqp-client', version: '5.14.0'
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.32'
+    testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.32'
 }
 
 test {
