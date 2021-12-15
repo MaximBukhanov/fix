@@ -1,9 +1,6 @@
 package Acceptor;
 
 import org.junit.Test;
-import quickfix.field.EncryptMethod;
-import quickfix.field.HeartBtInt;
-import quickfix.fix42.Logon;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,6 +13,10 @@ public class TradeAppAcceptorTest {
 
     private void createMessageTest(String actualFixMsg, String expectedFixMsg, int inSeqNo, int outSeqNo) throws IOException {
         TradeAppAcceptor tradeAppAcceptor = new TradeAppAcceptor();
+        Thread thread = new Thread(new MessageCreator());
+        Thread thread1 = new Thread(new MessageReceived());
+        thread.start();
+        thread1.start();
 
         SocketChannel socketChannel = null;
         Attachment attachment = new Attachment();
@@ -32,7 +33,7 @@ public class TradeAppAcceptorTest {
         actualByteBuffer = tradeAppAcceptor.createExecutionReport(socketChannel, actualFixMsg, attachment);
 
         if (actualByteBuffer != null)
-           actual =  deleteTimestamp(actualByteBuffer);
+            actual =  deleteTimestamp(actualByteBuffer);
 
         assertArrayEquals(actual, expected);
     }

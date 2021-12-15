@@ -28,7 +28,9 @@ public class MessageCreator implements Runnable {
             connection = factory.newConnection();
             Channel channel = connection.createChannel();
             Channel channelProducer = connection.createChannel();
+
             channel.queueDeclare(QUEUE_SERVER_TO_WORKER, false, false, false, null);
+            channelProducer.queueDeclare(QUEUE_WORKER_TO_SERVER, false, false, false, null);
 
             DeliverCallback deliverCallback = (consumerTag, delivery) -> {
                 String message = new String(delivery.getBody(), "UTF-8");
@@ -58,10 +60,8 @@ public class MessageCreator implements Runnable {
                 } catch (InvalidMessage | ConfigError | FieldNotFound e) {
                     e.printStackTrace();
                 }
-                channelProducer.queueDeclare(QUEUE_WORKER_TO_SERVER, false, false, false, null);
                 channelProducer.basicPublish("", QUEUE_WORKER_TO_SERVER, null, response.getBytes(StandardCharsets.UTF_8));
             };
-
             channel.basicConsume(QUEUE_SERVER_TO_WORKER, true, deliverCallback, consumerTag -> {});
 
         } catch (IOException | TimeoutException e) {

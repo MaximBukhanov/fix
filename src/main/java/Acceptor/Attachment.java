@@ -1,5 +1,7 @@
 package Acceptor;
 
+import edu.emory.mathcs.backport.java.util.concurrent.ConcurrentLinkedQueue;
+
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Set;
@@ -8,6 +10,9 @@ import java.util.Set;
  * Класс хранит всю информацию о клиентских сессиях
  */
 public class Attachment {
+
+    public static ConcurrentLinkedQueue queueMessage = new ConcurrentLinkedQueue();
+
     private HashMap<SocketChannel, Integer> inMsgSeqNoMap = new HashMap<>();
     private HashMap<SocketChannel, Integer> outMsgSeqNoMap = new HashMap<>();
     private HashMap<SocketChannel, Long> heartbeatTimeMap = new HashMap<>();
@@ -77,5 +82,4 @@ public class Attachment {
     public Set<SocketChannel> getAllConnection() {
         return heartbeatTimeMap.keySet();
     }
-
 }

@@ -19,6 +19,10 @@ public class StartAcceptorTest {
     public static void startServer() {
         final int PORT = 9090;
         try {
+            Thread thread = new Thread(new MessageCreator());
+            Thread thread1 = new Thread(new MessageReceived());
+            thread.start();
+            thread1.start();
             StartAcceptor acceptor = new StartAcceptor(new InetSocketAddress(PORT));
         } catch (IOException e) {
             e.printStackTrace();

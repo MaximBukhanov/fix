@@ -1,11 +1,11 @@
  [DEFAULT]
  ConnectionType=initiator
  LogonTimeout=30
- ReconnectInterval=5
+ ReconnectInterval=20
  ResetOnLogon=Y
  FileLogPath=./Client_Logs
  SenderCompID=CLIENT
- ValidateIncomingMessage=N
+ ValidateIncomingMessage=Y
 
  [SESSION]
  BeginString=FIX.4.2
@@ -14,8 +14,8 @@
  EndDay=sunday
  StartTime=00:00:00
  EndTime=00:00:00
- HeartBtInt=5
- CheckLatency=N
+ HeartBtInt=50
+ CheckLatency=Y
  SocketConnectPort=9090
  SocketConnectHost=localhost
  UseDataDictionary=Y
